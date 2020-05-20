@@ -60,4 +60,9 @@ google_verify:
 # https://ssl.bing.com/webmaster/configure/verify/ownership Option 2 content= goes here
 bing_verify:
 
+<<<<<<< HEAD
 # Links to include in footer navigation
+=======
+
+theme: jekyll-theme-slate
+>>>>>>> 83fe5f4b20166b43fadb85ecff824fd046496784
