@@ -1,0 +1,152 @@
+﻿---
+layout: post
+title: [Unity]有限状态机FSM
+date: 2020-5-20
+categories: blog
+tags:
+description: 。
+---
+
+#概念
+1.有限状态机：状态机由状态寄存器和组合逻辑电路构成，能够根据控制信号按照预先设定的状态进行状态转移，是协调相关信号动作、完成特定操作的控制中心。(百度复制的，哈哈哈)
+2.我的理解就是玩游戏主角有走，跑，跳，死亡等的状态，同一个时候只能有一个状态，当满足一个特定的条件就会从一个状态变成另一个状态
+![关系图.png](https://upload-images.jianshu.io/upload_images/14959584-5c78467f93b9ee89.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+
+#设计状态机
+不同的状态都会有进入状态，更新状态，离开状态几个行为，所以我们定义一个抽象类把这些特性提取出来
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public abstract class BaseState
+{    
+    protected FsmManager _fsmManager;
+    //构造函数
+    public BaseState(FsmManager fsmManager)
+    {
+        _fsmManager = fsmManager;
+    }
+    //进入状态
+    public abstract void EnterState();
+    //离开状态
+    public abstract void ExitState();
+    //更新状态
+    public abstract void UpdateState();
+    
+}
+```
+然后我们需要一个状态管理的类来管理，状态的注册，两个状态的转换，设置默认状态和更新状态
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class FsmManager
+{
+    private BaseState currentState;//当前状态
+    private Dictionary<string, BaseState> playerStateDic = new Dictionary<string, BaseState>();//储存状态的字典
+    public FsmManager() { }
+    //状态注册
+    public void Region(string statename, BaseState state)
+    {
+        if (!playerStateDic.ContainsKey(statename))
+        {
+            playerStateDic.Add(statename, state);
+        }
+    }
+    //设置默认状态
+    public void SetDefaultState(string statename)
+    {
+        if (playerStateDic.ContainsKey(statename))
+        {
+            currentState = playerStateDic[statename];
+            currentState.EnterState();
+        }
+    }
+    //改变状态
+    public void ChangeState(string statename)
+    {
+        if (playerStateDic.ContainsKey(statename))
+        {
+            if (currentState != null)
+            {
+                if (!(currentState == playerStateDic[statename]))
+                {
+                    currentState.ExitState();
+                    currentState = playerStateDic[statename];
+                    currentState.EnterState();
+                }
+
+            }
+        }
+    }
+   //更新状态
+    public void UpdateState()
+    {
+        if (currentState != null)
+        {
+            currentState.UpdateState();
+        }
+    }
+}
+```
+再编写不同状态的类，例如走的状态
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerWalkState : BaseState
+{
+    public PlayerWalkState(FsmManager fsmManager) : base(fsmManager) { }
+    public override void EnterState()
+    {       
+    }
+
+    public override void ExitState()
+    {        
+    }
+
+    public override void UpdateState()
+    {
+       //例如当满足条件A的时候状态从走变成跑
+       if (A){
+                    _fsmManager.ChangeState("run");
+       }
+    }
+}
+```
+后续其他状态增加相应的类就好了
+#测试
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class FSM: MonoBehaviour
+{
+
+    // Use this for initialization
+    public FsmManager fsmManager;   
+    void Start()
+    {     
+       
+        fsmManager = new FsmManager();
+        //注册状态
+        fsmManager.Region("walk", new PlayerWalkState(fsmManager, playerAnim));
+        fsmManager.Region("run", new PlayerRunState(fsmManager, playerAnim));
+        fsmManager.Region("jump", new PlayerJumpState(fsmManager, playerAnim));
+        //设置默认状态
+        fsmManager.SetDefaultState("walk");
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //更新状态
+        fsmManager.UpdateState();
+    } 
+}
+```
